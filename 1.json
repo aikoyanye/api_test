@@ -1,0 +1,28 @@
+{"Servers":
+  [
+    {
+      "Api": "http://127.0.0.1:8081/test",
+      "Header": {
+        "Content-Type": "multipart/form-data",
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      "Count": 2,
+      "Method": "POST",
+      "Form": {
+        "Username": "AikoYanye"
+      },
+      "Expected": {}
+    }
+  ],
+  "Sql": {
+    "Type": "mysql",
+    "Info": "root:rootroot@tcp(127.0.0.1:3306)/test?charset=utf8",
+    "Table": "api",
+    "Fields": ["RequestTime", "RequestBodyExpected", "RequestBody"]
+  },
+  "Csv": {
+    "SavePath": "3.csv",
+    "Fields": ["RequestBodyExpected", "RequestTime", "RequestBody", "RequestHeader", "RequestMethod", "RequestApi", "ResponseBody",
+      "ResponseHeader", "ResponseProto", "ResponseStatusCode", "ResponseStatus", "ResponseContentLength", "ResponseTransferEncoding"]
+  }
+}
