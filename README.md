@@ -2,16 +2,16 @@
  非常简单的、估计没啥用处的api自动化测试工具
  能够自定义访问Request的参数（method、header、form），获取访问的时间，并对比返回的结果是不是符合预期（如果需要的话）
 
-# 使用方法
+## 使用方法
 go build main.go -path [json案例文件路径] -mode [运行模式，默认：default] -log [保存的log文件路径，默认：程序当前路径]
 
-# -mode [default][parallel][performance][all]
+### -mode [default][parallel][performance][all]
 default：在主线程中，按照顺序与次数，访问API  
 parallel：并行的访问多个API（非相同API）  
 performance：高并发的访问相同的API（可能有问题）  
 all：并行且高并发的访问每个API（同样可能有问题）  
 
-# 案例样式，只接受JSON数据，且字段要符合相同（包括大小写），在根目录的1.json就是例子
+### 案例样式，只接受JSON数据，且字段要符合相同（包括大小写），在根目录的1.json就是例子
 Servers：是个列表，需要访问的API按照顺序排列即可
 
 以下是每组API的说明：  
@@ -22,7 +22,7 @@ Method：访问url的方法
 Form：访问url时传递的表单数据，不需要就留空"Form": {}，也必须是string: string  
 Expected：期望返回的结果，key要准确，value随意，string: string or string: list or string: map  
 
-# 将结果写入CSV或SQL中
+### 将结果写入CSV或SQL中
 支持写入的字段信息："RequestBodyExpected", "RequestTime", "RequestBody", "RequestHeader", "RequestMethod", "RequestApi", "ResponseBody",
       "ResponseHeader", "ResponseProto", "ResponseStatusCode", "ResponseStatus", "ResponseContentLength", "ResponseTransferEncoding"  
 写入CSV：
