@@ -63,6 +63,9 @@ func HttpGo(server *Server) (map[string]interface{}, *http.Response, float64, bo
 	bw.Close()
 	log.Log.Printf("正在访问API：%v\n", server.Api)
 	fmt.Printf("[%v]正在访问API：%v\n", time.Now().Format("2006-01-02 15:04:05"), server.Api)
+
+	t := time.Now()
+	// 这步计时
 	req, err = http.NewRequest(strings.ToUpper(server.Method), server.Api, nil)
 	if err != nil{
 		log.Log.Printf("请求失败：%v\n", err)
@@ -76,10 +79,9 @@ func HttpGo(server *Server) (map[string]interface{}, *http.Response, float64, bo
 	for key, value := range server.Header{
 		req.Header.Add(key, value)
 	}
-	t := time.Now()
-	// 这步计时
 	resp, err := http.DefaultClient.Do(req)
 	cost := time.Since(t).Seconds()
+
 	if err != nil{
 		log.Log.Printf("请求失败：%v\n", err)
 		fmt.Printf("[%v]请求失败：%v\n", time.Now().Format("2006-01-02 15:04:05"), err)

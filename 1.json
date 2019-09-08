@@ -6,13 +6,32 @@
         "Content-Type": "multipart/form-data",
         "Content-Type": "application/x-www-form-urlencoded"
       },
-      "Count": 2,
+      "Count": 100,
       "Method": "POST",
       "Form": {
         "Username": "AikoYanye"
       },
       "Expected": {}
+    },{
+    "Api": "http://127.0.0.1:8081/other_test",
+    "Header": {
+      "Content-Type": "multipart/form-data",
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "Count": 100,
+    "Method": "POST",
+    "Form": {
+      "Username": "Marisa",
+      "Password": "78as65d8976gfs7d6fa897ds60a897sf6a7sd"
+    },
+    "Expected": {
+      "msg": "xxx",
+      "fields": ["1", "2", "3"],
+      "results": {
+        "a": "a"
+      }
     }
+  }
   ],
   "Sql": {
     "Type": "mysql",

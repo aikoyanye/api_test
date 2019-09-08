@@ -1,19 +1,26 @@
 package main
 
 import (
-	"encoding/csv"
-	"os"
+	"fmt"
+	"sync/atomic"
 )
 
 func main(){
-	file, _ := os.OpenFile("2.csv", os.O_CREATE|os.O_RDWR, 0644)
-	defer file.Close()
-	file.WriteString("\xEF\xBB\xBF")
-	w := csv.NewWriter(file)
-	w.Write([]string{"1erwer", "2werwer", "3werwerwe"})
-	w.Flush()
-	w.Write([]string{"4", "5", "6"})
-	w.Flush()
-	w.Write([]string{"7", "8", "9"})
-	w.Flush()
+	ch := make(chan int, 6)
+	var index int32
+	for i := 0; i < 24; i++{
+		ch <- i
+		go func() {
+			for j := 0; j < 1000; j++{
+				fmt.Println(atomic.AddInt32(&index, 1))
+			}
+			<- ch
+		}()
+	}
+	for true{
+		if len(ch) == 0{
+			fmt.Println("----------------------------------")
+			break
+		}
+	}
 }
