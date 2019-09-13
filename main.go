@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -17,6 +18,7 @@ var results net.ServersLice
 var logPath string
 var results_map []map[string]string
 var mode string
+var h string
 
 func main(){
 	if jsonFilePath != ""{
@@ -52,7 +54,7 @@ func init(){
 	flag.StringVar(&jsonFilePath, "path", "", "json文件的路径，可以是绝对路径，也可以是相对路径")
 	flag.StringVar(&logPath, "log", "", "log文件的保存的路径，指定到路径就好，路径后面必须带有斜杠\"/\"")
 	flag.StringVar(&mode, "mode", "default", "访问API的模式，有三种模式：default、parallel、performance、all")
-	flag.StringVar(nil, "h", "", "有问题去看源码：https://github.com/aikoyanye/api_test")
+	flag.StringVar(&h, "h", "", "有问题去看源码：https://github.com/aikoyanye/api_test")
 	flag.Parse()
 }
 
@@ -125,8 +127,34 @@ func writeData(){
 	fmt.Printf("[%v]此次访问已经结束\n", time.Now().Format("2006-01-02 15:04:05"))
 	info.WriteCsv(&results.Csv, results_map)
 	info.WriteSql(&results.Sql, results_map)
+	checkTime()
 	defer info.CloseCsv(&results.Csv)
 	defer info.CloseDB(&results.Sql)
+}
+
+// 返回所有API访问的平均耗时与总耗时
+func checkTime(){
+	log.Log.Println("正在计算访问总耗时和平均耗时，请稍等...")
+	fmt.Printf("[%v]正在计算访问总耗时和平均耗时，请稍等...\n", time.Now().Format("2006-01-02 15:04:05"))
+	sum := make(map[string]float64)
+	avg := make(map[string]float64)
+	count := make(map[string]int)
+	for _, m := range results_map{
+		count[m["RequestApi"]] += 1
+		if f, err := strconv.ParseFloat(m["RequestTime"], 32); err != nil{
+			sum[m["RequestApi"]] += f
+		}else{
+			log.Log.Println("计算访问耗时失败，请自行检查数据")
+			fmt.Printf("[%v]计算访问耗时失败，请自行检查数据\n", time.Now().Format("2006-01-02 15:04:05"))
+			return
+		}
+	}
+	for key, value := range sum{
+		avg[key] = value / float64(count[key])
+		log.Log.Printf("访问\"%v\"所消耗的时间为：%v，平均耗时为：%v", key, value, avg[key])
+		fmt.Printf("[%v]访问\"%v\"所消耗的时间为：%v，平均耗时为：%v\n",
+			time.Now().Format("2006-01-02 15:04:05"), key, value, avg[key])
+	}
 }
 
 func chechCh(ch chan int){
@@ -142,8 +170,8 @@ func chechCh(ch chan int){
 // 访问api->比较结果->导出结果->导出log
 func ready(server net.Server){
 	result, resp, cost, success := net.HttpGo(&server)
-	fields := tool.PutResult(resp, result, &server, cost)
 	if success{
+		fields := tool.PutResult(resp, result, &server, cost)
 		fields["RequestBodyExpected"] = "None"
 		if len(server.Expected) != 0{
 			fields["RequestBodyExpected"] = tool.EasyCompare(result, server.Expected)

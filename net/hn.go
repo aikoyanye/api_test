@@ -90,8 +90,8 @@ func HttpGo(server *Server) (map[string]interface{}, *http.Response, float64, bo
 	var result map[string]interface{}
 	body, _ := ioutil.ReadAll(resp.Body)
 	if err := json.Unmarshal(body, &result); err != nil{
-		log.Log.Printf("访问API：%v所返回的Body解析错误：%v\n", server.Api, err)
-		fmt.Printf("[%v]访问API：%v所返回的Body解析错误：%v\n",
+		log.Log.Printf("访问API：%v 所返回的Body解析错误：%v\n", server.Api, err)
+		fmt.Printf("[%v]访问API：%v 所返回的Body解析错误：%v\n",
 			time.Now().Format("2006-01-02 15:04:05"), server.Api, err)
 		return nil, nil, 0.0, false
 	}

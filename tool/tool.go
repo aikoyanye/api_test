@@ -42,21 +42,23 @@ func Str2map(str string) map[string]string {
 }
 
 // 对比map
-func EasyCompare(format, result map[string]interface{}) string {
+func EasyCompareMap(format, result map[string]interface{}, k string) bool {
 	re := true
-	reStr := "Conformity"
-	log.Log.Println("正在比较请求返回的数据")
-	fmt.Printf("[%v]正在比较请求返回的数据\n", time.Now().Format("2006-01-02 15:04:05"))
 	if len(format) != len(result){
 		re = false
-		log.Log.Println("预期结果与返回结果的字段数目不一致")
-		fmt.Printf("[%v]预期结果与返回结果的字段数目不一致", time.Now().Format("2006-01-02 15:04:05"))
+		log.Log.Printf("预期结果与返回结果\"%v\"的字段数目不一致\n", k)
+		fmt.Printf("[%v]预期结果与返回结果\"%v\"的字段数目不一致\n", time.Now().Format("2006-01-02 15:04:05"), k)
 	}
 	for key, value := range format{
 		if data, err := result[key]; err {
 			if reflect.TypeOf(data) == reflect.TypeOf(value){
 				log.Log.Printf("\"%v\"看起来是符合预期的\n", key)
 				fmt.Printf("[%v]\"%v\"看起来是符合预期的\n", time.Now().Format("2006-01-02 15:04:05"), key)
+				// 判断结果中的map属性，但是不能作为判断依据，所以注释了
+				//switch data.(type) {
+				//case map[string]interface{}:
+				//	EasyCompareMap(value.(map[string]interface{}), data.(map[string]interface{}), key)
+				//}
 			}else{
 				re = false
 				log.Log.Printf("\"%v\"看起来是不符合预期的\n", key)
@@ -68,6 +70,16 @@ func EasyCompare(format, result map[string]interface{}) string {
 			fmt.Printf("[%v]返回结果中不存在字段: %v\n", time.Now().Format("2006-01-02 15:04:05"), key)
 		}
 	}
+	return re
+}
+
+// 对比期望结果
+func EasyCompare(format, result map[string]interface{}) string {
+	re := true
+	reStr := "Unknown"
+	log.Log.Println("正在比较请求返回的数据")
+	fmt.Printf("[%v]正在比较请求返回的数据\n", time.Now().Format("2006-01-02 15:04:05"))
+	re = EasyCompareMap(format, result, "root")
 	if re{
 		log.Log.Println("返回结果貌似与预期结果不一致")
 		fmt.Printf("[%v]返回结果貌似与预期结果不一致\n", time.Now().Format("2006-01-02 15:04:05"))
@@ -75,6 +87,7 @@ func EasyCompare(format, result map[string]interface{}) string {
 	}else{
 		log.Log.Println("返回结果貌似与预期结果一致")
 		fmt.Printf("[%v]返回结果貌似与预期结果一致\n", time.Now().Format("2006-01-02 15:04:05"))
+		reStr = "Conformity"
 	}
 	return reStr
 }
