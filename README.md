@@ -2,7 +2,11 @@
  能够自定义访问Request的参数（method、header、form），获取访问的时间，并对比返回的结果是不是符合预期（如果需要的话）
 
 ## 使用方法
-go build main.go -path [json案例文件路径] -mode [运行模式，默认：default] -log [保存的log文件路径，默认：程序当前路径]
+go build main.go 
+-path [json案例文件路径]   
+-mode [运行模式，默认：default]   
+-log [保存的log文件路径，默认：程序当前路径]   
+[xx] hh [xxx] hhh ...（可变长参数，将json案例中的字符串替换成其他字符串，[xx]替换成hh，不限格式，不能以“-”开头）
 
 ### -mode [default][parallel][performance][all]
 default：在主线程中，按照顺序与次数，访问API  

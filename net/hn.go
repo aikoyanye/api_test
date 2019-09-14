@@ -24,7 +24,7 @@ import (
 type Server struct {
 	Api 		string					`json:"Api"`
 	Header 		map[string]string		`json:"Header"`
-	Count 		int						`json:"Count"`
+	Count 		string					`json:"Count"`
 	Method 		string					`json:"Method"`
 	Form 		map[string]string		`json:"Form"`
 	Expected 	map[string]interface{}	`json:"Expected"`

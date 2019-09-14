@@ -16,7 +16,7 @@ import (
 var jsonFilePath string
 var results net.ServersLice
 var logPath string
-var results_map []map[string]string
+var resultsMap []map[string]string
 var mode string
 var h string
 
@@ -28,9 +28,10 @@ func main(){
 			panic(fmt.Sprintf("[%v]JSON文件解析失败，请检查json格式是否规范，程序退出：%v",
 				time.Now().Format("2006-01-02 15:04:05"), err))
 		}
+		tool.ReplaceResult(&results)
 		log.Log.Printf("共解析出 %v 条请求记录\n", len(results.Servers))
 		fmt.Printf("[%v]共解析出 %v 条请求记录\n", time.Now().Format("2006-01-02 15:04:05"), len(results.Servers))
-		results_map = []map[string]string{}
+		resultsMap = []map[string]string{}
 		if strings.ToLower(mode) == "default"{
 			_default()
 		}else if strings.ToLower(mode) == "parallel" {
@@ -61,8 +62,14 @@ func init(){
 // default默认模式运行
 func _default(){
 	for _, server := range results.Servers{
-		for i := 0; i < server.Count; i++ {
-			ready(server)
+		if count, err := strconv.Atoi(server.Count); err == nil{
+			for i := 0; i < count; i++ {
+				ready(server)
+			}
+		}else{
+			log.Log.Println("Count字段的内容错误，只接受可以转换为整型的字符串")
+			fmt.Printf("[%v]Count字段的内容错误，只接受可以转换为整型的字符串\n",
+				time.Now().Format("2006-01-02 15:04:05"))
 		}
 	}
 	writeData()
@@ -74,8 +81,14 @@ func _parallel(){
 	for index, server := range results.Servers{
 		ch <- index
 		go func(){
-			for i := 0; i < server.Count; i++ {
-				ready(server)
+			if count, err := strconv.Atoi(server.Count); err == nil{
+				for i := 0; i < count; i++ {
+					ready(server)
+				}
+			}else{
+				log.Log.Println("Count字段的内容错误，只接受可以转换为整型的字符串")
+				fmt.Printf("[%v]Count字段的内容错误，只接受可以转换为整型的字符串\n",
+					time.Now().Format("2006-01-02 15:04:05"))
 			}
 			<- ch
 		}()
@@ -90,12 +103,18 @@ func _performance(){
 		time.Now().Format("2006-01-02 15:04:05"))
 	ch := make(chan int)
 	for _, server := range results.Servers{
-		for i := 0; i < server.Count; i++ {
-			ch <- i
-			go func() {
-				ready(server)
-				<- ch
-			}()
+		if count, err := strconv.Atoi(server.Count); err == nil{
+			for i := 0; i < count; i++ {
+				ch <- i
+				go func() {
+					ready(server)
+					<- ch
+				}()
+			}
+		}else{
+			log.Log.Println("Count字段的内容错误，只接受可以转换为整型的字符串")
+			fmt.Printf("[%v]Count字段的内容错误，只接受可以转换为整型的字符串\n",
+				time.Now().Format("2006-01-02 15:04:05"))
 		}
 		time.Sleep(time.Second)
 	}
@@ -109,15 +128,21 @@ func _all(){
 		time.Now().Format("2006-01-02 15:04:05"))
 	ch := make(chan int)
 	for _, server := range results.Servers{
-		go func() {
-			for i := 0; i < server.Count; i++ {
-				ch <- i
-				go func() {
-					ready(server)
-					<- ch
-				}()
-			}
-		}()
+		if count, err := strconv.Atoi(server.Count); err == nil{
+			go func() {
+				for i := 0; i < count; i++ {
+					ch <- i
+					go func() {
+						ready(server)
+						<- ch
+					}()
+				}
+			}()
+		}else{
+			log.Log.Println("Count字段的内容错误，只接受可以转换为整型的字符串")
+			fmt.Printf("[%v]Count字段的内容错误，只接受可以转换为整型的字符串\n",
+				time.Now().Format("2006-01-02 15:04:05"))
+		}
 	}
 	chechCh(ch)
 }
@@ -125,8 +150,8 @@ func _all(){
 func writeData(){
 	log.Log.Println("此次访问已经结束")
 	fmt.Printf("[%v]此次访问已经结束\n", time.Now().Format("2006-01-02 15:04:05"))
-	info.WriteCsv(&results.Csv, results_map)
-	info.WriteSql(&results.Sql, results_map)
+	info.WriteCsv(&results.Csv, resultsMap)
+	info.WriteSql(&results.Sql, resultsMap)
 	checkTime()
 	defer info.CloseCsv(&results.Csv)
 	defer info.CloseDB(&results.Sql)
@@ -139,14 +164,14 @@ func checkTime(){
 	sum := make(map[string]float64)
 	avg := make(map[string]float64)
 	count := make(map[string]int)
-	for _, m := range results_map{
+	for _, m := range resultsMap {
 		count[m["RequestApi"]] += 1
 		if f, err := strconv.ParseFloat(m["RequestTime"], 32); err != nil{
 			sum[m["RequestApi"]] += f
 		}else{
 			log.Log.Println("计算访问耗时失败，请自行检查数据")
 			fmt.Printf("[%v]计算访问耗时失败，请自行检查数据\n", time.Now().Format("2006-01-02 15:04:05"))
-			return
+			continue
 		}
 	}
 	for key, value := range sum{
@@ -176,6 +201,6 @@ func ready(server net.Server){
 		if len(server.Expected) != 0{
 			fields["RequestBodyExpected"] = tool.EasyCompare(result, server.Expected)
 		}
-		results_map = append(results_map, fields)
+		resultsMap = append(resultsMap, fields)
 	}
 }

@@ -137,3 +137,46 @@ func PutResult(resp *http.Response, m map[string]interface{}, server *net.Server
 	fields["RequestTime"] = strconv.FormatFloat(cost, 'g', -1, 64) + "s"
 	return fields
 }
+
+// 处理os.Args，剔除多余部分
+func HandleArgs() map[string]string {
+	args := make(map[string]string)
+	for i := 1; i < len(os.Args); i+=2{
+		if os.Args[i][0:1] != "-"{
+			args[os.Args[i]] = os.Args[i+1]
+		}
+	}
+	return args
+}
+
+// 替换结果字符串
+func ReplaceResult(result *net.ServersLice){
+	args := HandleArgs()
+	if len(args) != 0{
+		for i := 0; i < len(result.Servers); i++{
+			for key, value := range args{
+				result.Servers[i].Api = strings.ReplaceAll(result.Servers[i].Api, key, value)
+				result.Servers[i].Method = strings.ReplaceAll(result.Servers[i].Method, key, value)
+				result.Servers[i].Count = strings.ReplaceAll(result.Servers[i].Count, key, value)
+				for k, v := range result.Servers[i].Form{
+					result.Servers[i].Form[k] = strings.ReplaceAll(v, key, value)
+				}
+				for k, v := range result.Servers[i].Header{
+					result.Servers[i].Header[k] = strings.ReplaceAll(v, key, value)
+				}
+			}
+		}
+		for key, value := range args{
+			result.Csv.SavePath = strings.ReplaceAll(result.Csv.SavePath, key, value)
+			for i, fields := range result.Csv.Fields{
+				result.Csv.Fields[i] = strings.ReplaceAll(fields, key, value)
+			}
+			result.Sql.Table = strings.ReplaceAll(result.Sql.Table, key, value)
+			result.Sql.Info = strings.ReplaceAll(result.Sql.Info, key, value)
+			result.Sql.Type = strings.ReplaceAll(result.Sql.Type, key, value)
+			for i, fields := range result.Sql.Fields{
+				result.Sql.Fields[i] = strings.ReplaceAll(fields, key, value)
+			}
+		}
+	}
+}

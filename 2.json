@@ -1,0 +1,29 @@
+{"Servers":
+[
+  {
+    "Api": "http://127.0.0.1:8081/test/[api]",
+    "Header": {
+      "Content-Type": "multipart/form-data",
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Header": "[header]"
+    },
+    "Count": "[count]",
+    "Method": "[method]",
+    "Form": {
+      "Username": "AikoYanye",
+      "Password": "[pwd]"
+    },
+    "Expected": {}
+  }
+],
+  "Sql": {
+    "Type": "[type]",
+    "Info": "[info]",
+    "Table": "[table]",
+    "Fields": ["RequestTime", "RequestBodyExpected", "RequestBody", "[fields]"]
+  },
+  "Csv": {
+    "SavePath": "[savepath]",
+    "Fields": ["[fields]"]
+  }
+}
