@@ -55,5 +55,14 @@
     "SavePath": "3.csv",
     "Fields": ["RequestBodyExpected", "RequestTime", "RequestBody", "RequestHeader", "RequestMethod", "RequestApi", "ResponseBody",
       "ResponseHeader", "ResponseProto", "ResponseStatusCode", "ResponseStatus", "ResponseContentLength", "ResponseTransferEncoding"]
+  },
+  "Upload": {
+    "Api": "http://127.0.0.1:8081/test/result",
+    "Header": {
+      "Content-Type": "multipart/form-data",
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "Method": "GET",
+    "Fields": ["RequestTime", "RequestBodyExpected", "RequestBody"]
   }
 }
