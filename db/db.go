@@ -3,10 +3,14 @@ package info
 import (
 	"../log"
 	"../net"
+	"bytes"
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-mysql"
 	_ "github.com/mattn/go-sqlite3"
+	"io/ioutil"
+	"mime/multipart"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -62,5 +66,30 @@ func WriteSql(sqlInfo *net.SqlInfo, fields []map[string]string){
 func CloseDB(sqlInfo *net.SqlInfo){
 	if sqlInfo.Type != "" && sqlInfo.Info != "" && sqlInfo.Table != ""{
 		DBObject.Close()
+	}
+}
+
+func UploadResult2Api(info *net.UploadInfo, fields []map[string]string){
+	if info.Method != "" || info.Api != ""{
+		for _, field := range fields{
+			go func(){
+				bodyBuf := &bytes.Buffer{}
+				bw := multipart.NewWriter(bodyBuf)
+				var req *http.Request
+				for _, f := range info.Fields{
+					bw.WriteField(f, field[f])
+				}
+				content := bw.FormDataContentType()
+				bw.Close()
+				req, _ = http.NewRequest(strings.ToUpper(info.Method), info.Api, nil)
+				req.Body = ioutil.NopCloser(bodyBuf)
+				req.Header.Add("Content-Type", content)
+				for key, value := range info.Header{
+					req.Header.Add(key, value)
+				}
+				resp, _ := http.DefaultClient.Do(req)
+				defer resp.Body.Close()
+			}()
+		}
 	}
 }

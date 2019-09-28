@@ -79,16 +79,17 @@ func _default(){
 func _parallel(){
 	ch := make(chan int, len(results.Servers))
 	for index, server := range results.Servers{
+		count, err := strconv.Atoi(server.Count)
+		if err != nil{
+			log.Log.Println("Count字段的内容错误，只接受可以转换为整型的字符串")
+			fmt.Printf("[%v]Count字段的内容错误，只接受可以转换为整型的字符串\n",
+				time.Now().Format("2006-01-02 15:04:05"))
+			continue
+		}
 		ch <- index
 		go func(){
-			if count, err := strconv.Atoi(server.Count); err == nil{
-				for i := 0; i < count; i++ {
-					ready(server)
-				}
-			}else{
-				log.Log.Println("Count字段的内容错误，只接受可以转换为整型的字符串")
-				fmt.Printf("[%v]Count字段的内容错误，只接受可以转换为整型的字符串\n",
-					time.Now().Format("2006-01-02 15:04:05"))
+			for i := 0; i < count; i++ {
+				ready(server)
 			}
 			<- ch
 		}()
@@ -101,11 +102,13 @@ func _performance(){
 	log.Log.Println("性能模式可能会出现不稳定的情况，与电脑配置有关，酌情控制访问数：Count")
 	fmt.Printf("[%v]性能模式可能会出现不稳定的情况，与电脑配置有关，酌情控制访问数：Count\n",
 		time.Now().Format("2006-01-02 15:04:05"))
-	ch := make(chan int)
+	var ch chan int
 	for _, server := range results.Servers{
 		if count, err := strconv.Atoi(server.Count); err == nil{
+			ch = make(chan int, count)
 			for i := 0; i < count; i++ {
 				ch <- i
+				fmt.Println("33333333333")
 				go func() {
 					ready(server)
 					<- ch
@@ -116,7 +119,10 @@ func _performance(){
 			fmt.Printf("[%v]Count字段的内容错误，只接受可以转换为整型的字符串\n",
 				time.Now().Format("2006-01-02 15:04:05"))
 		}
-		time.Sleep(time.Second)
+		for true{
+			if len(ch) == 0{ break }
+			time.Sleep(time.Second)
+		}
 	}
 	chechCh(ch)
 }
@@ -126,7 +132,13 @@ func _all(){
 	log.Log.Println("性能并行模式可能会出现不稳定的情况，与电脑配置有关，酌情控制访问数：Count")
 	fmt.Printf("[%v]性能并行模式可能会出现不稳定的情况，与电脑配置有关，酌情控制访问数：Count\n",
 		time.Now().Format("2006-01-02 15:04:05"))
-	ch := make(chan int)
+	count := 0
+	for _, server := range results.Servers{
+		if c, err := strconv.Atoi(server.Count); err == nil{
+			count += c
+		}
+	}
+	ch := make(chan int, count)
 	for _, server := range results.Servers{
 		if count, err := strconv.Atoi(server.Count); err == nil{
 			go func() {
@@ -144,6 +156,7 @@ func _all(){
 				time.Now().Format("2006-01-02 15:04:05"))
 		}
 	}
+	time.Sleep(3 * time.Second)
 	chechCh(ch)
 }
 
@@ -152,6 +165,7 @@ func writeData(){
 	fmt.Printf("[%v]此次访问已经结束\n", time.Now().Format("2006-01-02 15:04:05"))
 	info.WriteCsv(&results.Csv, resultsMap)
 	info.WriteSql(&results.Sql, resultsMap)
+	info.UploadResult2Api(&results.Upload, resultsMap)
 	checkTime()
 	defer info.CloseCsv(&results.Csv)
 	defer info.CloseDB(&results.Sql)
@@ -166,18 +180,18 @@ func checkTime(){
 	count := make(map[string]int)
 	for _, m := range resultsMap {
 		count[m["RequestApi"]] += 1
-		if f, err := strconv.ParseFloat(m["RequestTime"], 32); err != nil{
+		if f, err := strconv.ParseFloat(m["RequestTime"], 64); err == nil{
 			sum[m["RequestApi"]] += f
 		}else{
-			log.Log.Println("计算访问耗时失败，请自行检查数据")
-			fmt.Printf("[%v]计算访问耗时失败，请自行检查数据\n", time.Now().Format("2006-01-02 15:04:05"))
-			continue
+			log.Log.Printf("计算访问耗时失败，请自行检查数据：%v\n", err)
+			fmt.Printf("[%v]计算访问耗时失败，请自行检查数据：%v\n", time.Now().Format("2006-01-02 15:04:05"), err)
+			break
 		}
 	}
 	for key, value := range sum{
 		avg[key] = value / float64(count[key])
-		log.Log.Printf("访问\"%v\"所消耗的时间为：%v，平均耗时为：%v", key, value, avg[key])
-		fmt.Printf("[%v]访问\"%v\"所消耗的时间为：%v，平均耗时为：%v\n",
+		log.Log.Printf("访问\"%v\"所消耗的时间为：%vs，平均耗时为：%vs", key, value, avg[key])
+		fmt.Printf("[%v]访问\"%v\"所消耗的时间为：%vs，平均耗时为：%vs\n",
 			time.Now().Format("2006-01-02 15:04:05"), key, value, avg[key])
 	}
 }

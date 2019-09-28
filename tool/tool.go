@@ -134,7 +134,7 @@ func PutResult(resp *http.Response, m map[string]interface{}, server *net.Server
 		header += fmt.Sprintf("%v: %v ;", key, value)
 	}
 	fields["RequestBody"] = header
-	fields["RequestTime"] = strconv.FormatFloat(cost, 'g', -1, 64) + "s"
+	fields["RequestTime"] = strconv.FormatFloat(cost, 'f', -1, 64)
 	return fields
 }
 
@@ -176,6 +176,14 @@ func ReplaceResult(result *net.ServersLice){
 			result.Sql.Type = strings.ReplaceAll(result.Sql.Type, key, value)
 			for i, fields := range result.Sql.Fields{
 				result.Sql.Fields[i] = strings.ReplaceAll(fields, key, value)
+			}
+			result.Upload.Api = strings.ReplaceAll(result.Upload.Api, key, value)
+			result.Upload.Method = strings.ReplaceAll(result.Upload.Method, key, value)
+			for k, v := range result.Upload.Header{
+				result.Upload.Header[k] = strings.ReplaceAll(v, key, value)
+			}
+			for i, fields := range result.Upload.Fields{
+				result.Upload.Fields[i] = strings.ReplaceAll(fields, key, value)
 			}
 		}
 	}

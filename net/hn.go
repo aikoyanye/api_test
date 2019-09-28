@@ -5,10 +5,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -20,6 +22,7 @@ import (
 	Method：访问方法
 	Form：访问传输的数据，必须是json格式
 	Expected：预期返回结果的结构
+	DataFormat：传入的参数写在form or url
 */
 type Server struct {
 	Api 		string					`json:"Api"`
@@ -28,6 +31,7 @@ type Server struct {
 	Method 		string					`json:"Method"`
 	Form 		map[string]string		`json:"Form"`
 	Expected 	map[string]interface{}	`json:"Expected"`
+	DataFormat 	string					`json:"DataFormat"`
 }
 
 type SqlInfo struct {
@@ -42,10 +46,18 @@ type CsvInfo struct {
 	Fields 		[]string	`json:"Fields"`
 }
 
+type UploadInfo struct {
+	Api 		string					`json:"Api"`
+	Header 		map[string]string		`json:"Header"`
+	Method 		string					`json:"Method"`
+	Fields 		[]string				`json:"Fields"`
+}
+
 type ServersLice struct {
 	Servers []Server	`json:"Servers"`
 	Sql 	SqlInfo		`json:"Sql"`
 	Csv 	CsvInfo		`json:"Csv"`
+	Upload	UploadInfo	`json:"Upload"`
 }
 
 func HttpGo(server *Server) (map[string]interface{}, *http.Response, float64, bool) {
@@ -55,25 +67,30 @@ func HttpGo(server *Server) (map[string]interface{}, *http.Response, float64, bo
 	var req *http.Request
 	var err error
 
-	for key, value := range server.Form{
-		form.Add(key, value)
-		bw.WriteField(key, value)
-	}
+	putData2Form(bw, &form, server.Form)
+
 	content := bw.FormDataContentType()
 	bw.Close()
 	log.Log.Printf("正在访问API：%v\n", server.Api)
 	fmt.Printf("[%v]正在访问API：%v\n", time.Now().Format("2006-01-02 15:04:05"), server.Api)
 
-	t := time.Now()
 	// 这步计时
+	t := time.Now()
 	req, err = http.NewRequest(strings.ToUpper(server.Method), server.Api, nil)
 	if err != nil{
 		log.Log.Printf("请求失败：%v\n", err)
 		fmt.Printf("[%v]请求失败：%v\n", time.Now().Format("2006-01-02 15:04:05"), err)
 		return nil, nil, 0.0, false
 	}
-	req.URL.RawQuery = form.Encode()
-	req.Body = ioutil.NopCloser(bodyBuf)
+
+	for _, key := range strings.Split(server.DataFormat, "&"){
+		if strings.ToLower(key) == "form"{
+			req.Body = ioutil.NopCloser(bodyBuf)
+		}else if strings.ToLower(key) == "query"{
+			req.URL.RawQuery = form.Encode()
+		}
+	}
+
 	req.Header.Add("Content-Type", content)
 
 	for key, value := range server.Header{
@@ -99,4 +116,28 @@ func HttpGo(server *Server) (map[string]interface{}, *http.Response, float64, bo
 	fmt.Printf("[%v]访问API：%v 成功\n", time.Now().Format("2006-01-02 15:04:05"), server.Api)
 	defer resp.Body.Close()
 	return result, resp, cost, true
+}
+
+// 将数据写入form中
+func putData2Form(bw *multipart.Writer, form *url.Values, fields map[string]string){
+	for key, value := range fields{
+		if value[0:5] == "file:"{
+			fmt.Println(value[5:])
+			list := strings.Split(value[5:], "\\")
+			if len(list) == 1{
+				list = strings.Split(value[5:], "/")
+			}
+			w, _ := bw.CreateFormFile(key, list[len(list)-1])
+			if s, err := os.Open(value[5:]); err == nil{
+				io.Copy(w, s)
+				s.Close()
+			}else{
+				log.Log.Printf("将文件：%v写入Form中失败：%v\n", key, err)
+				fmt.Printf("[%v]将文件：%v写入Form中失败：%v\n", time.Now().Format("2006-01-02 15:04:05"), key, err)
+			}
+		}else{
+			form.Add(key, value)
+			bw.WriteField(key, value)
+		}
+	}
 }

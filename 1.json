@@ -6,19 +6,19 @@
         "Content-Type": "multipart/form-data",
         "Content-Type": "application/x-www-form-urlencoded"
       },
-      "Count": 100,
+      "Count": "100",
       "Method": "GET",
       "Form": {
         "Username": "AikoYanye"
       },
       "Expected": {}
     },{
-    "Api": "http://127.0.0.1:8081/other_test",
+    "Api": "http://127.0.0.1:8081/test/api",
     "Header": {
       "Content-Type": "multipart/form-data",
       "Content-Type": "application/x-www-form-urlencoded"
     },
-    "Count": 100,
+    "Count": "100",
     "Method": "GET",
     "Form": {
       "Username": "Marisa",
@@ -37,7 +37,7 @@
       "Content-Type": "multipart/form-data",
       "Content-Type": "application/x-www-form-urlencoded"
     },
-    "Count": 100,
+    "Count": "100",
     "Method": "GET",
     "Form": {
       "Username": "AikoYanye"
