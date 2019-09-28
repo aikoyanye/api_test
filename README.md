@@ -22,8 +22,9 @@ Api：待访问的url
 Header：访问url时的请求头，不需要就留空"Header": {}，必须是string: string  
 Count：访问url的次数，性能模式时为并发数
 Method：访问url的方法  
-Form：访问url时传递的表单数据，不需要就留空"Form": {}，也必须是string: string  
+Form：访问url时传递的表单数据，不需要就留空"Form": {}，也必须是string: string（若form要传输文件，请输入"file:filepath"）  
 Expected：期望返回的结果，key要准确，value随意，string: string or string: list or string: map  
+DataFormat：将Form数据写入表单还是url中，支持同时写，"form" or "query" or "form&query"
 
 ### 将结果写入CSV或SQL中  
 支持写入的字段信息："RequestBodyExpected", "RequestTime", "RequestBody", "RequestHeader", "RequestMethod", "RequestApi", "ResponseBody",
@@ -35,4 +36,9 @@ Fields：需要写入的字段（可能不是全部都需要吧）
 Type：目前只支持mysql、sqlite3  
 Info：连接sql的信息，例如：root:rootroot@tcp(127.0.0.1:3306)/test?charset=utf8（mysql） or log.db（sqlite3）  
 Table：待插入的数据库的表名（必须有字段，不会自动帮你创建）  
+Fields：需要写入的字段（可能不是全部都需要吧）  
+传结果到某个Api：  
+Api：访问的api  
+Method：访问方法  
+Header：请求头
 Fields：需要写入的字段（可能不是全部都需要吧）  
