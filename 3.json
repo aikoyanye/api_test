@@ -6,7 +6,37 @@
         "Content-Type": "multipart/form-data",
         "Content-Type": "application/x-www-form-urlencoded"
       },
-      "Count": "1",
+      "Count": "1000",
+      "Method": "GET",
+      "DataFormat": "form",
+      "Form": {
+        "Username": "AikoYanye",
+        "file": "file:D:/workspace/go/api_test/1.json"
+      },
+      "Expected": {}
+    },
+    {
+      "Api": "http://127.0.0.1:8081/test",
+      "Header": {
+        "Content-Type": "multipart/form-data",
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      "Count": "1000",
+      "Method": "GET",
+      "DataFormat": "form",
+      "Form": {
+        "Username": "AikoYanye",
+        "file": "file:D:/workspace/go/api_test/1.json"
+      },
+      "Expected": {}
+    },
+    {
+      "Api": "http://127.0.0.1:8081/test",
+      "Header": {
+        "Content-Type": "multipart/form-data",
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      "Count": "1000",
       "Method": "GET",
       "DataFormat": "form",
       "Form": {

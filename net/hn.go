@@ -61,68 +61,70 @@ type ServersLice struct {
 }
 
 func HttpGo(server *Server) (map[string]interface{}, *http.Response, float64, bool) {
-	bodyBuf := &bytes.Buffer{}
-	bw := multipart.NewWriter(bodyBuf)
-	form := url.Values{}
-	var req *http.Request
-	var err error
+	if server.Api != ""{
+		bodyBuf := &bytes.Buffer{}
+		bw := multipart.NewWriter(bodyBuf)
+		form := url.Values{}
+		var req *http.Request
+		var err error
 
-	putData2Form(bw, &form, server.Form)
+		putData2Form(bw, &form, server.Form)
 
-	content := bw.FormDataContentType()
-	bw.Close()
-	log.Log.Printf("正在访问API：%v\n", server.Api)
-	fmt.Printf("[%v]正在访问API：%v\n", time.Now().Format("2006-01-02 15:04:05"), server.Api)
+		content := bw.FormDataContentType()
+		bw.Close()
+		log.Log.Printf("正在访问API：%v\n", server.Api)
+		fmt.Printf("[%v]正在访问API：%v\n", time.Now().Format("2006-01-02 15:04:05"), server.Api)
 
-	// 这步计时
-	t := time.Now()
-	req, err = http.NewRequest(strings.ToUpper(server.Method), server.Api, nil)
-	if err != nil{
-		log.Log.Printf("请求失败：%v\n", err)
-		fmt.Printf("[%v]请求失败：%v\n", time.Now().Format("2006-01-02 15:04:05"), err)
-		return nil, nil, 0.0, false
-	}
-
-	for _, key := range strings.Split(server.DataFormat, "&"){
-		if strings.ToLower(key) == "form"{
-			req.Body = ioutil.NopCloser(bodyBuf)
-		}else if strings.ToLower(key) == "query"{
-			req.URL.RawQuery = form.Encode()
+		// 这步计时
+		t := time.Now()
+		req, err = http.NewRequest(strings.ToUpper(server.Method), server.Api, nil)
+		if err != nil{
+			log.Log.Printf("请求失败：%v\n", err)
+			fmt.Printf("[%v]请求失败：%v\n", time.Now().Format("2006-01-02 15:04:05"), err)
+			return nil, nil, 0.0, false
 		}
-	}
 
-	req.Header.Add("Content-Type", content)
+		for _, key := range strings.Split(server.DataFormat, "&"){
+			if strings.ToLower(key) == "form"{
+				req.Body = ioutil.NopCloser(bodyBuf)
+			}else if strings.ToLower(key) == "query"{
+				req.URL.RawQuery = form.Encode()
+			}
+		}
 
-	for key, value := range server.Header{
-		req.Header.Add(key, value)
-	}
-	resp, err := http.DefaultClient.Do(req)
-	cost := time.Since(t).Seconds()
+		req.Header.Add("Content-Type", content)
 
-	if err != nil{
-		log.Log.Printf("请求失败：%v\n", err)
-		fmt.Printf("[%v]请求失败：%v\n", time.Now().Format("2006-01-02 15:04:05"), err)
-		return nil, nil, 0.0, false
+		for key, value := range server.Header{
+			req.Header.Add(key, value)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		cost := time.Since(t).Seconds()
+
+		if err != nil{
+			log.Log.Printf("请求失败：%v\n", err)
+			fmt.Printf("[%v]请求失败：%v\n", time.Now().Format("2006-01-02 15:04:05"), err)
+			return nil, nil, 0.0, false
+		}
+		var result map[string]interface{}
+		body, _ := ioutil.ReadAll(resp.Body)
+		if err := json.Unmarshal(body, &result); err != nil{
+			log.Log.Printf("访问API：%v 所返回的Body解析错误：%v\n", server.Api, err)
+			fmt.Printf("[%v]访问API：%v 所返回的Body解析错误：%v\n",
+				time.Now().Format("2006-01-02 15:04:05"), server.Api, err)
+			return nil, nil, 0.0, false
+		}
+		log.Log.Printf("访问API：%v 成功\n", server.Api)
+		fmt.Printf("[%v]访问API：%v 成功\n", time.Now().Format("2006-01-02 15:04:05"), server.Api)
+		defer resp.Body.Close()
+		return result, resp, cost, true
 	}
-	var result map[string]interface{}
-	body, _ := ioutil.ReadAll(resp.Body)
-	if err := json.Unmarshal(body, &result); err != nil{
-		log.Log.Printf("访问API：%v 所返回的Body解析错误：%v\n", server.Api, err)
-		fmt.Printf("[%v]访问API：%v 所返回的Body解析错误：%v\n",
-			time.Now().Format("2006-01-02 15:04:05"), server.Api, err)
-		return nil, nil, 0.0, false
-	}
-	log.Log.Printf("访问API：%v 成功\n", server.Api)
-	fmt.Printf("[%v]访问API：%v 成功\n", time.Now().Format("2006-01-02 15:04:05"), server.Api)
-	defer resp.Body.Close()
-	return result, resp, cost, true
+	return nil, nil, 0.0, false
 }
 
 // 将数据写入form中
 func putData2Form(bw *multipart.Writer, form *url.Values, fields map[string]string){
 	for key, value := range fields{
 		if value[0:5] == "file:"{
-			fmt.Println(value[5:])
 			list := strings.Split(value[5:], "\\")
 			if len(list) == 1{
 				list = strings.Split(value[5:], "/")

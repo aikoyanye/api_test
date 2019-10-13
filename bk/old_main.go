@@ -1,4 +1,4 @@
-package main
+package old_main
 
 import (
 	"./db"
@@ -21,7 +21,6 @@ var resultsMap []map[string]string
 var mode string
 var h string
 var thread_count int
-var tp *tool.ThreadPool
 
 func main(){
 	if jsonFilePath != ""{
@@ -35,7 +34,6 @@ func main(){
 		log.Log.Printf("共解析出 %v 条请求记录\n", len(results.Servers))
 		fmt.Printf("[%v]共解析出 %v 条请求记录\n", time.Now().Format("2006-01-02 15:04:05"), len(results.Servers))
 		resultsMap = []map[string]string{}
-		tp = tool.GetThreadPool(thread_count, ready)
 		if strings.ToLower(mode) == "default"{
 			_default()
 		}else if strings.ToLower(mode) == "parallel" {
@@ -80,35 +78,10 @@ func _default(){
 	writeData()
 }
 
+// parallel并行模式运行
 func _parallel(){
-	tp.Run = func(server net.Server){
-		if server.Api != ""{
-			count, err := strconv.Atoi(server.Count)
-			if err != nil{
-				log.Log.Println("Count字段的内容错误，只接受可以转换为整型的字符串")
-				fmt.Printf("[%v]Count字段的内容错误，只接受可以转换为整型的字符串\n",
-					time.Now().Format("2006-01-02 15:04:05"))
-				return
-			}
-			for i := 0; i < count; i++ {
-				ready(server)
-			}
-		}
-	}
-	tp.Start()
-	for _, server := range results.Servers{
-		tp.AddTask(server)
-	}
-	chechCh1(tp)
-}
-
-// performance高并发模式
-func _performance(){
-	log.Log.Println("性能模式可能会出现不稳定的情况，与电脑配置有关，酌情控制访问数：Count")
-	fmt.Printf("[%v]性能模式可能会出现不稳定的情况，与电脑配置有关，酌情控制访问数：Count\n",
-		time.Now().Format("2006-01-02 15:04:05"))
-	tp.Start()
-	for _, server := range results.Servers{
+	ch := make(chan int, len(results.Servers))
+	for index, server := range results.Servers{
 		count, err := strconv.Atoi(server.Count)
 		if err != nil{
 			log.Log.Println("Count字段的内容错误，只接受可以转换为整型的字符串")
@@ -116,11 +89,44 @@ func _performance(){
 				time.Now().Format("2006-01-02 15:04:05"))
 			continue
 		}
-		for i := 0; i < count; i++ {
-			tp.AddTask(server)
+		ch <- index
+		go func(){
+			for i := 0; i < count; i++ {
+				ready(server)
+			}
+			<- ch
+		}()
+	}
+	chechCh(ch)
+}
+
+// performance高并发模式
+func _performance(){
+	log.Log.Println("性能模式可能会出现不稳定的情况，与电脑配置有关，酌情控制访问数：Count")
+	fmt.Printf("[%v]性能模式可能会出现不稳定的情况，与电脑配置有关，酌情控制访问数：Count\n",
+		time.Now().Format("2006-01-02 15:04:05"))
+	var ch chan int
+	for _, server := range results.Servers{
+		if count, err := strconv.Atoi(server.Count); err == nil{
+			ch = make(chan int, count)
+			for i := 0; i < count; i++ {
+				ch <- i
+				go func() {
+					ready(server)
+					<- ch
+				}()
+			}
+		}else{
+			log.Log.Println("Count字段的内容错误，只接受可以转换为整型的字符串")
+			fmt.Printf("[%v]Count字段的内容错误，只接受可以转换为整型的字符串\n",
+				time.Now().Format("2006-01-02 15:04:05"))
+		}
+		for true{
+			if len(ch) == 0{ break }
+			time.Sleep(time.Second)
 		}
 	}
-	chechCh1(tp)
+	chechCh(ch)
 }
 
 // all 性能+并行模式
@@ -128,24 +134,32 @@ func _all(){
 	log.Log.Println("性能并行模式可能会出现不稳定的情况，与电脑配置有关，酌情控制访问数：Count")
 	fmt.Printf("[%v]性能并行模式可能会出现不稳定的情况，与电脑配置有关，酌情控制访问数：Count\n",
 		time.Now().Format("2006-01-02 15:04:05"))
-	jobs := []net.Server{}
+	count := 0
+	for _, server := range results.Servers{
+		if c, err := strconv.Atoi(server.Count); err == nil{
+			count += c
+		}
+	}
+	ch := make(chan int, count)
 	for _, server := range results.Servers{
 		if count, err := strconv.Atoi(server.Count); err == nil{
-			for i := 0; i < count; i++ {
-				jobs = append(jobs, server)
-			}
+			go func() {
+				for i := 0; i < count; i++ {
+					ch <- i
+					go func() {
+						ready(server)
+						<- ch
+					}()
+				}
+			}()
 		}else{
 			log.Log.Println("Count字段的内容错误，只接受可以转换为整型的字符串")
 			fmt.Printf("[%v]Count字段的内容错误，只接受可以转换为整型的字符串\n",
 				time.Now().Format("2006-01-02 15:04:05"))
 		}
 	}
-	tool.Shuffle(jobs)
-	tp.Start()
-	for _, ser := range jobs{
-		tp.AddTask(ser)
-	}
-	chechCh1(tp)
+	time.Sleep(3 * time.Second)
+	chechCh(ch)
 }
 
 func writeData(){
@@ -184,10 +198,9 @@ func checkTime(){
 	}
 }
 
-func chechCh1(tp *tool.ThreadPool){
+func chechCh(ch chan int){
 	for true{
-		if len(tp.Job) == 0 && len(tp.Result) == tp.Count{
-			tp.Stop()
+		if len(ch) == 0{
 			writeData()
 			break
 		}

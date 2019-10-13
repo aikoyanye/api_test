@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"reflect"
@@ -186,5 +187,18 @@ func ReplaceResult(result *net.ServersLice){
 				result.Upload.Fields[i] = strings.ReplaceAll(fields, key, value)
 			}
 		}
+	}
+}
+
+// 洗牌算法
+func Shuffle(arr []net.Server){
+	rand.Seed(time.Now().UnixNano())
+	var i, j int
+	var temp net.Server
+	for i = len(arr) - 1; i > 0; i-- {
+		j = rand.Intn(i + 1)
+		temp = arr[i]
+		arr[i] = arr[j]
+		arr[j] = temp
 	}
 }
