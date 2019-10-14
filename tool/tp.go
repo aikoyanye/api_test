@@ -4,8 +4,6 @@ import (
 	"../net"
 )
 
-var index int64
-
 type ThreadPool struct {
 	Job 	chan net.Server
 	Result 	chan int
@@ -14,9 +12,7 @@ type ThreadPool struct {
 }
 
 func GetThreadPool(count int, run func(server net.Server)) *ThreadPool {
-	index = 0
-	t := &ThreadPool{Count: count, Job: make(chan net.Server, count), Run: run, Result: make(chan int, count)}
-	return t
+	return &ThreadPool{Count: count, Job: make(chan net.Server, count), Run: run, Result: make(chan int, count)}
 }
 
 func (tp ThreadPool) Start(){
